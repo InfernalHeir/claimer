@@ -1,0 +1,41 @@
+{
+  "name": "claimers-contracts",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "prettier": "prettier --write 'contracts/**/*.sol'",
+    "deploy": "hardhat run ./scripts/deploy.ts --network testnet",
+    "verify": "hardhat verify 0xbC9009ac93Ba111c7C0dBB8E2624c4e43Be61e46 --network testnet",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage --network localhost",
+    "compile": "hardhat compile",
+    "flatten": "hardhat flatten ./contracts/Claimer.sol > ./flatten/Claimer.sol"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.21",
+    "@types/mocha": "^8.2.3",
+    "@types/node": "^16.3.1",
+    "chai": "^4.3.4",
+    "hardhat": "^2.4.3",
+    "prettier": "^2.3.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.15",
+    "ts-node": "^10.1.0",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^2.1.4",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^4.2.0",
+    "@openzeppelin/contracts-upgradeable": "^4.2.0",
+    "dotenv": "^10.0.0",
+    "ethereum-waffle": "^3.4.0",
+    "ethereumjs-util": "^7.1.0",
+    "ethers": "^5.4.1",
+    "hardhat-gas-reporter": "^1.0.4",
+    "lodash": "^4.17.21",
+    "solhint": "^3.3.6",
+    "solidity-coverage": "^0.7.16"
+  }
+}
