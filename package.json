@@ -6,7 +6,8 @@
   "scripts": {
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "deploy": "hardhat run ./scripts/deploy.ts --network testnet",
-    "verify": "hardhat verify 0xbC9009ac93Ba111c7C0dBB8E2624c4e43Be61e46 --network testnet",
+    "deploy:mock": "hardhat run ./scripts/deployMock.ts --network testnet",
+    "verify": "hardhat verify 0x636207A8708FCE52ed7D90e6df078fD035FE1076 0x61456BF1715C1415730076BB79ae118E806E74d2 --network testnet",
     "test": "hardhat test",
     "coverage": "hardhat coverage --network localhost",
     "compile": "hardhat compile",

@@ -27,6 +27,8 @@ interface NewTokens {
 
 const ZERO_ADDRESS: string = "0x0000000000000000000000000000000000000000";
 
+const BiconomyForwarder: string = "0x61456BF1715C1415730076BB79ae118E806E74d2";
+
 describe("UNIFARM Claimer Contract", () => {
   var claimer: Contract;
   var owner: SignerWithAddress;
@@ -43,7 +45,9 @@ describe("UNIFARM Claimer Contract", () => {
 
     const claimerFactory = await ethers.getContractFactory("Claimer");
     // deploy the claimer contract
-    const CLAIMER = await claimerFactory.connect(owner).deploy();
+    const CLAIMER = await claimerFactory
+      .connect(owner)
+      .deploy(BiconomyForwarder);
     // wait for the deployment done
     await CLAIMER.deployed();
 
@@ -482,6 +486,29 @@ describe("UNIFARM Claimer Contract", () => {
 
     it("will give me right owner", async () => {
       expect(await claimer._owner()).to.be.equal(owner.address);
+    });
+
+    it("get the trust forwarder address", async () => {
+      const expectedTrustForwarder = await claimer.trustedForwarder();
+      expect(String(expectedTrustForwarder).toLowerCase()).to.be.equal(
+        BiconomyForwarder.toLowerCase()
+      );
+    });
+
+    it("update the trust forwarder", async () => {
+      await claimer.connect(owner).updateTrustForwarder(ZERO_ADDRESS);
+    });
+
+    it("now trust forwarder zero address", async () => {
+      const expectedTrustForwarder = await claimer.trustedForwarder();
+      expect(String(expectedTrustForwarder).toLowerCase()).to.be.equal(
+        ZERO_ADDRESS.toLowerCase()
+      );
+    });
+
+    it("get the forwarder version", async () => {
+      const versionRecipient = await claimer.versionRecipient();
+      expect(Number(versionRecipient)).to.be.equal(2);
     });
   });
 });

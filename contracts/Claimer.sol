@@ -8,167 +8,180 @@ import "./libraries/SafeERC20.sol";
 import "./interfaces/IERC20.sol";
 
 contract Claimer is Ownable {
-    /// @notice using SafeMath library for arithmetic operations.
-    using SafeMath for uint256;
+  /// @notice using SafeMath library for arithmetic operations.
+  using SafeMath for uint256;
 
-    /// @notice using SafeERC20 library for safe ERC20 Actions.
-    using SafeERC20 for IERC20;
+  /// @notice using SafeERC20 library for safe ERC20 Actions.
+  using SafeERC20 for IERC20;
 
-    /// @notice ProjectDetails store project related data.
-    struct ProjectDetails {
-        address oldImplementation;
-        address newImplementation;
-        uint256 totalSwapTokens;
-    }
+  /// @notice ProjectDetails store project related data.
+  struct ProjectDetails {
+    address oldImplementation;
+    address newImplementation;
+    uint256 totalSwapTokens;
+  }
 
-    /// @notice mapping for storing Project details.
-    mapping(bytes32 => ProjectDetails) public projects;
+  /// @notice mapping for storing Project details.
+  mapping(bytes32 => ProjectDetails) public projects;
 
-    event ProjectAdded(
-        bytes32 indexed projectHash,
-        address indexed oldImplementation,
-        address indexed newImplementation,
-        uint256 totalSwapTokens,
-        uint256 when
+  event ProjectAdded(
+    bytes32 indexed projectHash,
+    address indexed oldImplementation,
+    address indexed newImplementation,
+    uint256 totalSwapTokens,
+    uint256 when
+  );
+
+  event Swap(
+    bytes32 indexed projectHash,
+    address indexed userAddress,
+    uint256 swapAmount,
+    uint256 time
+  );
+
+  /// @notice construct the claimer contract.
+  constructor(address _trustedForwarder) Ownable(_msgSender()) {
+    trustedForwarder = _trustedForwarder;
+  }
+
+  function addProject(
+    address _oldImplementation,
+    address _newImplementation,
+    uint256 _totalSwapTokens
+  ) external onlyOwner {
+    require(
+      _oldImplementation != address(0) && _newImplementation != address(0),
+      "addProject:: invalid implementation addresses"
+    );
+    require(_totalSwapTokens > 0, "addProject:: invaild totalSwapTokens");
+
+    bytes32 projectHash = keccak256(
+      abi.encodePacked(_oldImplementation, _newImplementation)
     );
 
-    event Swap(
-        bytes32 indexed projectHash,
-        address indexed userAddress,
-        uint256 swapAmount,
-        uint256 time
+    projects[projectHash] = ProjectDetails({
+      oldImplementation: _oldImplementation,
+      newImplementation: _newImplementation,
+      totalSwapTokens: _totalSwapTokens
+    });
+
+    emit ProjectAdded(
+      projectHash,
+      _oldImplementation,
+      _newImplementation,
+      _totalSwapTokens,
+      block.timestamp
+    );
+  }
+
+  function swap(bytes32 projectHash, uint256 amount)
+    external
+    whenNotPaused
+    returns (bool)
+  {
+    require(amount > 0, "swap:: invalid amount");
+
+    ProjectDetails memory project = projects[projectHash];
+
+    require(
+      project.totalSwapTokens >= amount,
+      "swap::amount exceeds totalSwapTokens"
     );
 
-    /// @notice construct the claimer contract.
-    constructor() Ownable(_msgSender()) {}
+    _swap(
+      projectHash,
+      project.oldImplementation,
+      project.newImplementation,
+      amount
+    );
 
-    function addProject(
-        address _oldImplementation,
-        address _newImplementation,
-        uint256 _totalSwapTokens
-    ) external onlyOwner {
-        require(
-            _oldImplementation != address(0) &&
-                _newImplementation != address(0),
-            "addProject:: invalid implementation addresses"
-        );
-        require(_totalSwapTokens > 0, "addProject:: invaild totalSwapTokens");
+    return true;
+  }
 
-        bytes32 projectHash = keccak256(
-            abi.encodePacked(_oldImplementation, _newImplementation)
-        );
+  function _swap(
+    bytes32 projectHash,
+    address oldImplementation,
+    address newImplementation,
+    uint256 swapAmount
+  ) internal {
+    projects[projectHash].totalSwapTokens = projects[projectHash]
+    .totalSwapTokens
+    .sub(swapAmount);
+    // swap old token with new one
+    IERC20(oldImplementation).safeTransferFrom(
+      _msgSender(),
+      address(this),
+      swapAmount
+    );
 
-        projects[projectHash] = ProjectDetails({
-            oldImplementation: _oldImplementation,
-            newImplementation: _newImplementation,
-            totalSwapTokens: _totalSwapTokens
-        });
+    require(
+      IERC20(newImplementation).balanceOf(address(this)) >= swapAmount,
+      "_swap:: Swap Failed"
+    );
+    // send out the new tokens
+    IERC20(newImplementation).safeTransfer(_msgSender(), swapAmount);
 
-        emit ProjectAdded(
-            projectHash,
-            _oldImplementation,
-            _newImplementation,
-            _totalSwapTokens,
-            block.timestamp
-        );
-    }
+    emit Swap(projectHash, _msgSender(), swapAmount, block.timestamp);
+  }
 
-    function swap(bytes32 projectHash, uint256 amount)
-        external
-        whenNotPaused
-        returns (bool)
-    {
-        require(amount > 0, "swap:: invalid amount");
+  function updateProjectDetails(
+    bytes32 oldProjectHash,
+    address _oldImplementation,
+    address _newImplementation,
+    uint256 _totalSwapTokens
+  ) external onlyOwner returns (bool) {
+    require(
+      _oldImplementation != address(0) && _newImplementation != address(0),
+      "updateProjectDetails:: invalid implementation addresses"
+    );
+    require(
+      _totalSwapTokens > 0,
+      "updateProjectDetails:: invaild totalSwapTokens"
+    );
 
-        ProjectDetails memory project = projects[projectHash];
+    delete projects[oldProjectHash];
 
-        require(
-            project.totalSwapTokens >= amount,
-            "swap::amount exceeds totalSwapTokens"
-        );
+    bytes32 newProjectHash = keccak256(
+      abi.encodePacked(_oldImplementation, _newImplementation)
+    );
 
-        _swap(
-            projectHash,
-            project.oldImplementation,
-            project.newImplementation,
-            amount
-        );
+    projects[newProjectHash] = ProjectDetails({
+      oldImplementation: _oldImplementation,
+      newImplementation: _newImplementation,
+      totalSwapTokens: _totalSwapTokens
+    });
 
-        return true;
-    }
+    emit ProjectAdded(
+      newProjectHash,
+      _oldImplementation,
+      _newImplementation,
+      _totalSwapTokens,
+      block.timestamp
+    );
 
-    function _swap(
-        bytes32 projectHash,
-        address oldImplementation,
-        address newImplementation,
-        uint256 swapAmount
-    ) internal {
-        projects[projectHash].totalSwapTokens = projects[projectHash]
-        .totalSwapTokens
-        .sub(swapAmount);
-        // swap old token with new one
-        IERC20(oldImplementation).safeTransferFrom(
-            _msgSender(),
-            address(this),
-            swapAmount
-        );
+    return true;
+  }
 
-        require(
-            IERC20(newImplementation).balanceOf(address(this)) >= swapAmount,
-            "_swap:: Swap Failed"
-        );
-        // send out the new tokens
-        IERC20(newImplementation).safeTransfer(_msgSender(), swapAmount);
+  function pause() external onlyOwner returns (bool) {
+    _pause();
+    return true;
+  }
 
-        emit Swap(projectHash, _msgSender(), swapAmount, block.timestamp);
-    }
+  function unpause() external onlyOwner returns (bool) {
+    _unpause();
+    return true;
+  }
 
-    function updateProjectDetails(
-        bytes32 oldProjectHash,
-        address _oldImplementation,
-        address _newImplementation,
-        uint256 _totalSwapTokens
-    ) external onlyOwner returns (bool) {
-        require(
-            _oldImplementation != address(0) &&
-                _newImplementation != address(0),
-            "updateProjectDetails:: invalid implementation addresses"
-        );
-        require(
-            _totalSwapTokens > 0,
-            "updateProjectDetails:: invaild totalSwapTokens"
-        );
+  /**
+   * Override this function.
+   * This version is to keep track of BaseRelayRecipient you are using
+   * in your contract.
+   */
+  function versionRecipient() external pure override returns (string memory) {
+    return "2";
+  }
 
-        delete projects[oldProjectHash];
-
-        bytes32 newProjectHash = keccak256(
-            abi.encodePacked(_oldImplementation, _newImplementation)
-        );
-
-        projects[newProjectHash] = ProjectDetails({
-            oldImplementation: _oldImplementation,
-            newImplementation: _newImplementation,
-            totalSwapTokens: _totalSwapTokens
-        });
-
-        emit ProjectAdded(
-            newProjectHash,
-            _oldImplementation,
-            _newImplementation,
-            _totalSwapTokens,
-            block.timestamp
-        );
-
-        return true;
-    }
-
-    function pause() external onlyOwner returns (bool) {
-        _pause();
-        return true;
-    }
-
-    function unpause() external onlyOwner returns (bool) {
-        _unpause();
-        return true;
-    }
+  function updateTrustForwarder(address _newTrustForwarder) external onlyOwner {
+    trustedForwarder = _newTrustForwarder;
+  }
 }
