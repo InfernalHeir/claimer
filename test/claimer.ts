@@ -510,5 +510,38 @@ describe("UNIFARM Claimer Contract", () => {
       const versionRecipient = await claimer.versionRecipient();
       expect(Number(versionRecipient)).to.be.equal(2);
     });
+
+    it("only owner get the token with safeWithdraw function", async () => {
+      const tokens = ethers.utils.parseUnits("1000", "ether");
+      await expect(
+        claimer.connect(alice).safeWithdraw(newTokens.newORO.address, tokens)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("owner get the token with safeWithdraw function but amount should be in limits", async () => {
+      const tokens = ethers.utils.parseUnits("451200000", "ether");
+      await expect(
+        claimer.connect(owner).safeWithdraw(newTokens.newORO.address, tokens)
+      ).to.be.revertedWith("Insufficient Balance");
+    });
+
+    it("owner get the token with safeWithdraw function", async () => {
+      const tokens = ethers.utils.parseUnits("1000", "ether");
+      await expect(
+        claimer.connect(owner).safeWithdraw(newTokens.newORO.address, tokens)
+      ).to.be.emit(claimer, "WithdrawDetails");
+    });
+
+    it("check the owner balance", async () => {
+      const balance = await newTokens.newORO.balanceOf(owner.address);
+      const parse = Number(formatUnits(balance, "ether"));
+      expect(parse).to.be.equal(1000);
+    });
+
+    it("check the contract balance", async () => {
+      const balance = await newTokens.newORO.balanceOf(claimer.address);
+      const parse = Number(formatUnits(balance, "ether"));
+      expect(parse).to.be.equal(54000);
+    });
   });
 });

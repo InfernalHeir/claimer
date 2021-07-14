@@ -39,6 +39,12 @@ contract Claimer is Ownable {
     uint256 time
   );
 
+  event WithdrawDetails(
+    address indexed tokenAddress,
+    uint256 withdrawalAmount,
+    uint256 time
+  );
+
   /// @notice construct the claimer contract.
   constructor(address _trustedForwarder) Ownable(_msgSender()) {
     trustedForwarder = _trustedForwarder;
@@ -170,6 +176,15 @@ contract Claimer is Ownable {
   function unpause() external onlyOwner returns (bool) {
     _unpause();
     return true;
+  }
+
+  function safeWithdraw(address tokenAddress, uint256 amount) public onlyOwner {
+    require(
+      IERC20(tokenAddress).balanceOf(address(this)) >= amount,
+      "Insufficient Balance"
+    );
+    IERC20(tokenAddress).safeTransfer(_owner, amount);
+    emit WithdrawDetails(tokenAddress, amount, block.timestamp);
   }
 
   /**
