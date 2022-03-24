@@ -8,7 +8,9 @@ async function main() {
 
   const factory = await ethers.getContractFactory("Claimer");
 
-  const Claimer = await factory.connect(owner).deploy(BiconomyForwarder);
+  const Claimer = await factory
+    .connect(owner)
+    .deploy(BiconomyForwarder, "0x9D00f0AF42291D9130E34B5a615F41b306409082");
 
   await Claimer.deployed();
 

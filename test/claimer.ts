@@ -7,7 +7,7 @@ import {
   AbiCoder,
   formatUnits,
   keccak256,
-  solidityKeccak256
+  solidityKeccak256,
 } from "ethers/lib/utils";
 
 const { solidity } = waffle;
@@ -33,21 +33,24 @@ describe("UNIFARM Claimer Contract", () => {
   var claimer: Contract;
   var owner: SignerWithAddress;
   var alice: SignerWithAddress;
+  var oroReceiverWallet: SignerWithAddress;
 
   var oldTokens: OldTokens;
   var newTokens: NewTokens;
 
   before(async () => {
-    const [ownerSigner, aliceSigner] = await ethers.getSigners();
+    const [ownerSigner, aliceSigner, oroWalletSigner] =
+      await ethers.getSigners();
 
     owner = ownerSigner;
     alice = aliceSigner;
+    oroReceiverWallet = oroWalletSigner;
 
     const claimerFactory = await ethers.getContractFactory("Claimer");
     // deploy the claimer contract
     const CLAIMER = await claimerFactory
       .connect(owner)
-      .deploy(BiconomyForwarder);
+      .deploy(BiconomyForwarder, oroReceiverWallet.address);
     // wait for the deployment done
     await CLAIMER.deployed();
 
@@ -71,7 +74,7 @@ describe("UNIFARM Claimer Contract", () => {
 
     oldTokens = {
       oldORO: ORO,
-      oldUFARM: UFARM
+      oldUFARM: UFARM,
     };
   });
 
@@ -114,7 +117,7 @@ describe("UNIFARM Claimer Contract", () => {
 
       newTokens = {
         newORO,
-        newUFARM
+        newUFARM,
       };
     });
   });
@@ -392,8 +395,10 @@ describe("UNIFARM Claimer Contract", () => {
       expect(oldOroBalance).to.be.equal(0);
     });
 
-    it("contract have 5000 old oro balance", async () => {
-      const oldOroBalance = await oldTokens.oldORO.balanceOf(claimer.address);
+    it("configured oroWallet have 5000 old oro balance", async () => {
+      const oldOroBalance = await oldTokens.oldORO.balanceOf(
+        oroReceiverWallet.address
+      );
       const parsedOldValue = Number(formatUnits(oldOroBalance, "ether"));
       expect(parsedOldValue).to.be.equal(5000);
     });
@@ -440,9 +445,9 @@ describe("UNIFARM Claimer Contract", () => {
       expect(oldUfarmBalance).to.be.equal(0);
     });
 
-    it("contract have 15000 old UFARM balance", async () => {
+    it("oroReceiverWallet have 15000 old UFARM balance", async () => {
       const oldUfarmBalance = await oldTokens.oldUFARM.balanceOf(
-        claimer.address
+        oroReceiverWallet.address
       );
       const parsedOldValue = Number(formatUnits(oldUfarmBalance, "ether"));
       expect(parsedOldValue).to.be.equal(15000);
@@ -542,6 +547,26 @@ describe("UNIFARM Claimer Contract", () => {
       const balance = await newTokens.newORO.balanceOf(claimer.address);
       const parse = Number(formatUnits(balance, "ether"));
       expect(parse).to.be.equal(54000);
+    });
+
+    it("it check oroReceiverWallet", async () => {
+      expect(await claimer.tokensReceiverWallet()).to.be.eql(
+        oroReceiverWallet.address
+      );
+    });
+  });
+
+  describe("update OroReceiver Wallet Address", () => {
+    it("only owner can access this function", async () => {
+      await expect(
+        claimer.connect(alice).updateTokensReceiverWallet(owner.address)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+    it("update the receiver wallet", async () => {
+      await claimer.connect(owner).updateTokensReceiverWallet(owner.address);
+    });
+    it("it can check new oroReceiverWallet", async () => {
+      expect(await claimer.tokensReceiverWallet()).to.be.eql(owner.address);
     });
   });
 });

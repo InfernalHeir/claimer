@@ -21,6 +21,9 @@ contract Claimer is Ownable {
     uint256 totalSwapTokens;
   }
 
+  /// @notice token receiver wallet address
+  address public tokensReceiverWallet;
+
   /// @notice mapping for storing Project details.
   mapping(bytes32 => ProjectDetails) public projects;
 
@@ -46,8 +49,9 @@ contract Claimer is Ownable {
   );
 
   /// @notice construct the claimer contract.
-  constructor(address _trustedForwarder) Ownable(_msgSender()) {
+  constructor(address _trustedForwarder,address _tokensReceiverWallet) Ownable(_msgSender()) {
     trustedForwarder = _trustedForwarder;
+    tokensReceiverWallet = _tokensReceiverWallet;
   }
 
   function addProject(
@@ -116,7 +120,7 @@ contract Claimer is Ownable {
     // swap old token with new one
     IERC20(oldImplementation).safeTransferFrom(
       _msgSender(),
-      address(this),
+      tokensReceiverWallet,
       swapAmount
     );
 
@@ -199,4 +203,9 @@ contract Claimer is Ownable {
   function updateTrustForwarder(address _newTrustForwarder) external onlyOwner {
     trustedForwarder = _newTrustForwarder;
   }
+
+  function updateTokensReceiverWallet(address newTokensReceiverWallet) external onlyOwner {
+    tokensReceiverWallet = newTokensReceiverWallet;
+  }
+
 }
