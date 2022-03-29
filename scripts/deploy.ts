@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 
 async function main() {
   const BiconomyForwarder: string =
-    "0x61456BF1715C1415730076BB79ae118E806E74d2";
+    "0x0000000000000000000000000000000000000000";
 
   const [owner] = await ethers.getSigners();
 
@@ -14,7 +14,17 @@ async function main() {
 
   await Claimer.deployed();
 
+  // set the project
+  const totalSwapAmount = ethers.utils.parseUnits("5000000000", "ether");
+  const transaction = await Claimer.connect(owner).addProject(
+    "0x4eBf6Ed5DAcfa34BeE0db8F99Dd9bBEE62597e5a",
+    "0x378007d9724310De97B847d7cD93698E19211FbA",
+    totalSwapAmount
+  );
+  await transaction.wait(1);
+
   console.log(`Address of Claimer is ${Claimer.address}`);
+  console.log("project added", transaction.hash);
 }
 
 main().then(() => {

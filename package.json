@@ -5,9 +5,9 @@
   "license": "MIT",
   "scripts": {
     "prettier": "prettier --write 'contracts/**/*.sol'",
-    "deploy": "hardhat run ./scripts/deploy.ts --network testnet",
+    "deploy": "hardhat run ./scripts/deploy.ts --network avax",
     "deploy:mock": "hardhat run ./scripts/deployMock.ts --network testnet",
-    "verify": "hardhat verify 0x636207A8708FCE52ed7D90e6df078fD035FE1076 0x61456BF1715C1415730076BB79ae118E806E74d2 --network testnet",
+    "verify": "hardhat verify 0x7dE1E99637ce3a7Ed8feC9423bdF016Fe9D6275C 0x84a0856b038eaAd1cC7E297cF34A7e72685A8693 0x9D00f0AF42291D9130E34B5a615F41b306409082 --network rinkeby",
     "test": "hardhat test",
     "coverage": "hardhat coverage --network localhost",
     "compile": "hardhat compile",

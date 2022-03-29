@@ -14,38 +14,50 @@ config();
 const RPC_URL = process.env.RPC_URL as string;
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const BSC_API_KEY = process.env.BSC_API_KEY as string;
-const MAINNET_RPC = process.env.MAINNET_RPC;
+const RINKEBY_RPC = process.env.RINKEBY_RPC;
+const POLYGON_RPC = process.env.POLYGON_RPC as string;
+const AVAX_RPC = process.env.AVAX_RPC as string;
 
 const hardhatConfig: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
     localhost: {
-      url: "http://localhost:8545"
+      url: "http://localhost:8545",
     },
     testnet: {
       url: RPC_URL,
       accounts: [PRIVATE_KEY],
-      chainId: 97
+      chainId: 97,
     },
-    mainnet: {
-      url: MAINNET_RPC,
+    polygon: {
+      url: POLYGON_RPC,
       accounts: [PRIVATE_KEY],
-      chainId: 56
-    }
+      chainId: 80001,
+    },
+    avax: {
+      url: AVAX_RPC,
+      accounts: [PRIVATE_KEY],
+      chainId: 43113,
+    },
+    rinkeby: {
+      url: RINKEBY_RPC,
+      accounts: [PRIVATE_KEY],
+      chainId: 4,
+    },
   },
   solidity: {
     version: "0.8.0",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200
-      }
-    }
+        runs: 200,
+      },
+    },
   },
   etherscan: {
-    apiKey: BSC_API_KEY
-  }
+    apiKey: BSC_API_KEY,
+  },
 };
 
 export default hardhatConfig;
